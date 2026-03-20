@@ -7,9 +7,8 @@ import dataclasses
 import enum
 import functools
 import pathlib
-import subprocess  # noqa: S404
 
-from cleanmac import logger
+from cleanmac import logger, toolbox
 
 from ._abc import ABCCommand
 
@@ -17,21 +16,6 @@ from ._abc import ABCCommand
 class _EntryKind(enum.Enum):
     FILE = "file"
     DIRECTORY = "directory"
-
-
-async def _run_cmd(*args: str, check: bool = True) -> tuple[
-    bytes, bytes, int | None
-]:
-    proc = await asyncio.create_subprocess_exec(
-        *args, stdin=None,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    stdout, stderr = await proc.communicate()
-    if check and proc.returncode:
-        raise subprocess.CalledProcessError(
-            proc.returncode, args, output=stdout, stderr=stderr
-        )
-    return stdout, stderr, proc.returncode
 
 
 class _PackageParsingError(Exception):
@@ -97,13 +81,9 @@ class _Package:
         try:
             location = await self._get_location()
             logger.debug("Listing content of %s", self.name)
-            stdout, *_ = await _run_cmd("pkgutil", "--files", self.name)
-            [x for x in stdout.decode().split("\n") if x]
-            pathlib.Path("/")
+            stdout, *_ = await toolbox.run_cmd("pkgutil", "--files", self.name)
             self._content = tuple(
-                location / f for f in sorted(
-                    stdout.decode().split("\n")
-                ) if f
+                location / f for f in sorted(stdout.split("\n")) if f
             )
             self._content = tuple(
                 # Directories are making false positivites and might drop
@@ -119,10 +99,10 @@ class _Package:
 
     async def _get_location(self) -> pathlib.Path:
         logger.debug("Loading location of %s", self.name)
-        stdout, *_ = await _run_cmd("pkgutil", "--info", self.name)
+        stdout, *_ = await toolbox.run_cmd("pkgutil", "--info", self.name)
         volume: str | None = None
         location: str | None = None
-        for ln in stdout.decode().split("\n"):
+        for ln in stdout.split("\n"):
             if ":" not in ln:
                 continue
             k, v = [x.strip() for x in ln.split(":")]
@@ -196,9 +176,9 @@ class Command(ABCCommand):
 
     @functools.cached_property
     def _packages(self) -> tuple[_Package, ...]:
-        stdout, *_ = asyncio.run(_run_cmd("pkgutil", "--packages"))
+        stdout, *_ = asyncio.run(toolbox.run_cmd("pkgutil", "--packages"))
         ret = tuple(
-            _Package(x) for x in sorted(stdout.decode().split("\n")) if x
+            _Package(x) for x in sorted(stdout.split("\n")) if x
         )
         return tuple(p for p in ret if not p.name.startswith("com.apple"))
 
@@ -211,13 +191,13 @@ class Command(ABCCommand):
                 if self.remove:
                     logger.info("Forgetting uninstalled package %s", p.name)
                     _, stderr, _ = asyncio.run(
-                        _run_cmd("pkgutil", "--forget", p.name)
+                        toolbox.run_cmd("pkgutil", "--forget", p.name)
                     )
                     if stderr:
                         # exit code is 0 even in case of issue
                         logger.error(
                             "Error while processing: %s",
-                            stderr.decode().strip()
+                            stderr.strip()
                         )
                 else:
                     logger.info("Found uninstalled package %s", p.name)

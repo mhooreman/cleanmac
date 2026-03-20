@@ -4,7 +4,7 @@ import pathlib
 
 import click
 
-from . import commands
+from . import commands, toolbox
 
 _DIRECTORY_ARGUMENT = click.argument(
     "directory",
@@ -66,6 +66,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @click.pass_context
 def main(ctx: click.Context, *, showlicense: bool) -> None:
     """Clean MacOS."""
+    try:
+        toolbox.ensure_on_macos()
+    except toolbox.UnsupportedOSError as e:
+        raise click.ClickException(str(e)) from e
+
     if showlicense:
         click.echo(_LICENSE_MSG)
         raise SystemExit(0)
