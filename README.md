@@ -12,7 +12,9 @@ This tool needs python >= 3.12 on any version of MacOS.
 
 ### Using `uv`
 
-This is the recommanded way.
+This is the recommanded way. Please see the
+[UV documentation](https://docs.astral.sh/uv/)
+.
 
 Simply replace the url of the chosen version in the command below.
 
@@ -33,7 +35,8 @@ scope of the current document.
 
 ## Development
 
-Develoment shall be done using uv. Please refer to the official documentation
+Develoment shall be done using uv. Please refer to the
+[official documentation](https://docs.astral.sh/uv/)
 of that tool.
 
 Quality control rules are fixed in the pyproject.toml file. The following shall
