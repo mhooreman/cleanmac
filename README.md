@@ -10,9 +10,11 @@
 
 # 0.1.1
 
-[x] #2: Justfile removed
-[x] #3: Completed README.md
-[x] #4: unit test don't rely on `__location__` anymore
+- #2: Justfile removed
+
+- #3: Completed README.md
+
+- #4: unit test don't rely on `__location__` anymore
 
 # 0.1.0
 
